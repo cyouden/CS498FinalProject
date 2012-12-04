@@ -18,39 +18,36 @@ package com.example.android.BluetoothChat;
 
 import java.io.IOException;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.ClipData.Item;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.hardware.Camera;
-import android.hardware.Camera.Parameters;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.Toast;
 
 /**
  * This is the main Activity that displays the current chat session.
  */
+@SuppressLint("HandlerLeak")
 @TargetApi(11)
 public class BluetoothChat extends Activity {
     // Debugging
@@ -74,13 +71,12 @@ public class BluetoothChat extends Activity {
     private static final int REQUEST_ENABLE_BT = 3;
 
     // Layout Views
-    private ListView mConversationView;
     private Button mSendButton;
+    private SurfaceView mPreviewSurfaceView;
+    private SurfaceView mReceiveSurfaceView;
     
 	// Name of the connected device
     private String mConnectedDeviceName = null;
-    // Array adapter for the conversation thread
-    private ArrayAdapter<String> mConversationArrayAdapter;
     // Local Bluetooth adapter
     private BluetoothAdapter mBluetoothAdapter = null;
     // Member object for the chat services
@@ -88,9 +84,9 @@ public class BluetoothChat extends Activity {
 
     
     // Camera
-	private Bitmap mCameraImage;
 	private Camera mCamera;
-	private Parameters mParameters;
+	private SurfaceHolder.Callback mSurfaceholderCallBack;
+	private Bitmap mCameraImage;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -147,60 +143,64 @@ public class BluetoothChat extends Activity {
     private void setupChat() {
         Log.d(TAG, "setupChat()");
 
-        // Initialize the array adapter for the conversation thread
-        mConversationArrayAdapter = new ArrayAdapter<String>(this, R.layout.message);
-        mConversationView = (ListView) findViewById(R.id.in);
-        mConversationView.setAdapter(mConversationArrayAdapter);
-
-        // Initialize the send button with a listener that for click events
-        mSendButton = (Button) findViewById(R.id.button_send);
-        mSendButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-                // Send a message using content of the edit text widget
-                
-            	//TextView view = (TextView) findViewById(R.id.edit_text_out);
-                //String message = view.getText().toString();
-                //sendMessage(message);
-                
-            	SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-            	
-            	mCamera.setParameters(mCamera.getParameters());
-            	try {
-					mCamera.setPreviewDisplay(surfaceView.getHolder());
+        mPreviewSurfaceView = (SurfaceView) findViewById(R.id.previewSurfaceView);
+        mReceiveSurfaceView = (SurfaceView) findViewById(R.id.receivedSurfaceView);
+        
+        mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
+        
+        mSurfaceholderCallBack = new SurfaceHolder.Callback() {
+			@Override
+			public void surfaceDestroyed(SurfaceHolder holder) {
+				// not used
+			}
+			
+			@Override
+			public void surfaceCreated(SurfaceHolder holder) {
+				try {
+		    		mCamera.setParameters(mCamera.getParameters());
+					mCamera.setPreviewDisplay(mPreviewSurfaceView.getHolder());
+					mCamera.setDisplayOrientation(90);
+					mCamera.startPreview();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					
+					// Unable to get the camera initialized properly, won't be able to take pictures
 				}
-            	mCamera.startPreview();
+			}
+			
+			@Override
+			public void surfaceChanged(SurfaceHolder holder, int format, int width,	int height) {
+				// not used
+			}
+		};
+		
+		mPreviewSurfaceView.getHolder().addCallback(mSurfaceholderCallBack);
+        
+        // Initialize the send button with a listener that for click events
+        mSendButton = (Button) findViewById(R.id.button_send);
+        mSendButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {                           	
+                   	
+            	
             	            	
         		mCamera.takePicture(null, null, new Camera.PictureCallback() {
         			@Override
         			public void onPictureTaken(byte[] data, Camera camera) {
-        				// decode the data obtained by the camera into a Bitmap
-        				mCameraImage = BitmapFactory.decodeByteArray(data, 0, data.length);
-        				// set the iv_image
+        				// send the image
         				sendData(data);
         				
-        				ImageView imageView = (ImageView) findViewById(R.id.imageView);//new ImageView(BluetoothChat.this);
-        				imageView.setImageBitmap(mCameraImage);
-        				imageView.setAdjustViewBounds(true);
-        				//imageView.setMaxHeight(64);
-        				//imageView.setMaxWidth(64);
+        				// decode the data obtained by the camera into a Bitmap
+        				mCameraImage = BitmapFactory.decodeByteArray(data, 0, data.length);
         				
-        				//mConversationView.addView(imageView);
-        				
-        				//iv_image1.setImageBitmap(bmp);
+						mCamera.startPreview();     				
         			}
         		});
             }
         });
 
         // Initialize the BluetoothChatService to perform bluetooth connections
-        mChatService = new BluetoothChatService(this, mHandler);
-
-        new StringBuffer("");
-        
-        mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
+        mChatService = new BluetoothChatService(this, mHandler);        
     }
 
     @Override
@@ -261,7 +261,7 @@ public class BluetoothChat extends Activity {
     }
 
     // The Handler that gets information back from the BluetoothChatService
-    private final Handler mHandler = new Handler() {
+	private final Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -270,7 +270,6 @@ public class BluetoothChat extends Activity {
                 switch (msg.arg1) {
                 case BluetoothChatService.STATE_CONNECTED:
                     setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
-                    mConversationArrayAdapter.clear();
                     break;
                 case BluetoothChatService.STATE_CONNECTING:
                     setStatus(R.string.title_connecting);
@@ -282,16 +281,18 @@ public class BluetoothChat extends Activity {
                 }
                 break;
             case MESSAGE_WRITE:
-                byte[] writeBuf = (byte[]) msg.obj;
-                // construct a string from the buffer
-                String writeMessage = new String(writeBuf);
-                mConversationArrayAdapter.add("Me:  " + writeMessage);
+                // nothing to do for now
                 break;
             case MESSAGE_READ:
                 byte[] readBuf = (byte[]) msg.obj;
                 // construct a string from the valid bytes in the buffer
-                String readMessage = new String(readBuf, 0, msg.arg1);
-                mConversationArrayAdapter.add(mConnectedDeviceName+":  " + readMessage);
+                Bitmap receivedImage = BitmapFactory.decodeByteArray(readBuf, 0, msg.arg1);
+                
+                SurfaceHolder surfaceHolder = mReceiveSurfaceView.getHolder();
+                Canvas canvas = surfaceHolder.lockCanvas();
+                canvas.drawBitmap(receivedImage, 0.0f, 0.0f, new Paint());
+                surfaceHolder.unlockCanvasAndPost(canvas);
+                
                 break;
             case MESSAGE_DEVICE_NAME:
                 // save the connected device's name
