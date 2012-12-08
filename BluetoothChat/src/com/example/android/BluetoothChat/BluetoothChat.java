@@ -18,9 +18,6 @@ package com.example.android.BluetoothChat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -37,7 +34,6 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
-import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -164,7 +160,6 @@ public class BluetoothChat extends Activity {
         	mCamera = Camera.open(0);
         }
         
-        
         mSurfaceholderCallBack = new SurfaceHolder.Callback() {
 			@Override
 			public void surfaceDestroyed(SurfaceHolder holder) {
@@ -175,8 +170,6 @@ public class BluetoothChat extends Activity {
 			public void surfaceCreated(SurfaceHolder holder) {
 				try {
 					Parameters cameraParameters = mCamera.getParameters();
-					List<Camera.Size> sizes = cameraParameters.getSupportedPreviewSizes(); 
-					
 		    		mCamera.setParameters(cameraParameters);
 					mCamera.setPreviewDisplay(mPreviewSurfaceView.getHolder());
 					mCamera.setDisplayOrientation(90);
