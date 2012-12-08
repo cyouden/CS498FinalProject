@@ -78,6 +78,7 @@ public class BluetoothChat extends Activity {
     private Button mSendButton;
     private SurfaceView mPreviewSurfaceView;
     private SurfaceView mReceiveSurfaceView;
+    private SurfaceView mGameSurfaceView;
     
 	// Name of the connected device
     private String mConnectedDeviceName = null;
@@ -98,7 +99,9 @@ public class BluetoothChat extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if(D) Log.e(TAG, "+++ ON CREATE +++");
+        if(D) {
+        	Log.e(TAG, "+++ ON CREATE +++");
+        }
 
         // Set up the window layout
         setContentView(R.layout.main);
@@ -117,7 +120,9 @@ public class BluetoothChat extends Activity {
     @Override
     public void onStart() {
         super.onStart();
-        if(D) Log.e(TAG, "++ ON START ++");
+        if(D) {
+        	Log.e(TAG, "++ ON START ++");
+        }
 
         // If BT is not on, request that it be enabled.
         // setupChat() will then be called during onActivityResult
@@ -126,14 +131,18 @@ public class BluetoothChat extends Activity {
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
         // Otherwise, setup the chat session
         } else {
-            if (mChatService == null) setupChat();
+            if (mChatService == null) {
+            	setupChat();
+            }
         }
     }
 
     @Override
     public synchronized void onResume() {
         super.onResume();
-        if(D) Log.e(TAG, "+ ON RESUME +");
+        if(D) {
+        	Log.e(TAG, "+ ON RESUME +");
+        }
 
         // Performing this check in onResume() covers the case in which BT was
         // not enabled during onStart(), so we were paused to enable it...
@@ -152,6 +161,7 @@ public class BluetoothChat extends Activity {
 
         mPreviewSurfaceView = (SurfaceView) findViewById(R.id.previewSurfaceView);
         mReceiveSurfaceView = (SurfaceView) findViewById(R.id.receivedSurfaceView);
+        mGameSurfaceView = (SurfaceView) findViewById(R.id.game_surface);
         
         try {
         	mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
@@ -175,9 +185,6 @@ public class BluetoothChat extends Activity {
 					mCamera.setDisplayOrientation(90);
 					mCamera.startPreview();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					
 					// Unable to get the camera initialized properly, won't be able to take pictures
 				}
 			}
@@ -225,26 +232,39 @@ public class BluetoothChat extends Activity {
     @Override
     public synchronized void onPause() {
         super.onPause();
-        if(D) Log.e(TAG, "- ON PAUSE -");
+        if(D) {
+        	Log.e(TAG, "- ON PAUSE -");
+        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if(D) Log.e(TAG, "-- ON STOP --");
+        if(D) {
+        	Log.e(TAG, "-- ON STOP --");
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         // Stop the Bluetooth chat services
-        if (mChatService != null) mChatService.stop();
+        if (mChatService != null) {
+        	mChatService.stop();
+        }
+        
         mCamera.release();
-        if(D) Log.e(TAG, "--- ON DESTROY ---");
+        
+        if(D) {
+        	Log.e(TAG, "--- ON DESTROY ---");
+        }
     }
 
     private void ensureDiscoverable() {
-        if(D) Log.d(TAG, "ensure discoverable");
+        if(D) {
+        	Log.d(TAG, "ensure discoverable");
+        }
+        
         if (mBluetoothAdapter.getScanMode() !=
             BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -335,7 +355,10 @@ public class BluetoothChat extends Activity {
     };
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(D) Log.d(TAG, "onActivityResult " + resultCode);
+        if(D) {
+        	Log.d(TAG, "onActivityResult " + resultCode);
+        }
+        
         switch (requestCode) {
         case REQUEST_CONNECT_DEVICE_SECURE:
             // When DeviceListActivity returns with a device to connect
@@ -400,6 +423,10 @@ public class BluetoothChat extends Activity {
             return true;
         }
         return false;
+    }
+    
+    public SurfaceView getGameSurfaceView() {
+    	return mGameSurfaceView;
     }
 
 }
