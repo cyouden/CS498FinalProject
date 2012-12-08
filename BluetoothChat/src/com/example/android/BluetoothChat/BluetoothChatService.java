@@ -455,22 +455,22 @@ public class BluetoothChatService {
                 try {
                     // Read from the InputStream
                 	
-                	mmInStream.read(sizeBuffer);
+                	bytes = mmInStream.read(sizeBuffer);
                 	
                 	int size = ByteBuffer.wrap(sizeBuffer).getInt();
                 	buffer = new byte[size];		
                 	
                 	ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 	
-                	bytes = mmInStream.read(buffer);
-                	
-//                	do {
-//                		baos.write(buffer, 0, bytes);
-//                	} while ((bytes = mmInStream.read(buffer)) != 1);
-//                	
-//                	baos.write(buffer, 0, bytes);
-//                	
-                	byte[] data = buffer;
+                	do {
+                		bytes = mmInStream.read(buffer);
+                		baos.write(buffer, 0, bytes);
+                		
+                		buffer = new byte[buffer.length - bytes];
+                		
+                	} while (baos.size() < size);
+             	
+                	byte[] data = baos.toByteArray();
                 	
                     // Send the obtained bytes to the UI Activity
                     mHandler.obtainMessage(BluetoothChat.MESSAGE_READ, data.length, -1, data)
@@ -495,8 +495,6 @@ public class BluetoothChatService {
             	
                 mmOutStream.write(buffer);
                 mmOutStream.flush();
-                
-                mmOutStream.write(0);
                
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(BluetoothChat.MESSAGE_WRITE, -1, -1, buffer)
