@@ -454,8 +454,10 @@ public class BluetoothChatService {
                     // Read from the InputStream
                 	ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 	
-                	//read until there is less than a full buffer of data left (or 1007 bytes of data - for some reason after the first image is sent, for every image after the first 1007 bytes are sent on their own)
-                	while ((bytes = mmInStream.read(buffer)) == buffer.length || bytes == 1007) {
+                	bytes = mmInStream.read(buffer);
+                	baos.write(buffer, 0, bytes);
+                	
+                	while ((bytes = mmInStream.read(buffer)) == buffer.length) {
                 		baos.write(buffer, 0, bytes);
                 	}
                 	
