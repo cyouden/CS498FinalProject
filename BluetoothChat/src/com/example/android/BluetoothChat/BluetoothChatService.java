@@ -16,6 +16,7 @@
 
 package com.example.android.BluetoothChat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -451,10 +452,16 @@ public class BluetoothChatService {
             while (true) {
                 try {
                     // Read from the InputStream
-                    bytes = mmInStream.read(buffer);
-
+                	ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                	
+                	while ((bytes = mmInStream.read(buffer)) > 0) {
+                		baos.write(buffer, 0, bytes);
+                	}
+                	
+                	byte[] data = baos.toByteArray();
+                	
                     // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(BluetoothChat.MESSAGE_READ, bytes, -1, buffer)
+                    mHandler.obtainMessage(BluetoothChat.MESSAGE_READ, data.length, -1, data)
                             .sendToTarget();
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);

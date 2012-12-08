@@ -16,7 +16,11 @@
 
 package com.example.android.BluetoothChat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -26,10 +30,13 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
+import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -84,9 +91,12 @@ public class BluetoothChat extends Activity {
 
     
     // Camera
-	private Camera mCamera;
+	private Camera mCamera = null;
 	private SurfaceHolder.Callback mSurfaceholderCallBack;
 	private Bitmap mCameraImage;
+	
+	private final int IMAGE_WIDTH = 100;
+	private final int IMAGE_HEIGHT = 100;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -146,7 +156,13 @@ public class BluetoothChat extends Activity {
         mPreviewSurfaceView = (SurfaceView) findViewById(R.id.previewSurfaceView);
         mReceiveSurfaceView = (SurfaceView) findViewById(R.id.receivedSurfaceView);
         
-        mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
+        try {
+        	mCamera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
+        }
+        catch (Exception e) {
+        	mCamera = Camera.open(0);
+        }
+        
         
         mSurfaceholderCallBack = new SurfaceHolder.Callback() {
 			@Override
@@ -157,7 +173,10 @@ public class BluetoothChat extends Activity {
 			@Override
 			public void surfaceCreated(SurfaceHolder holder) {
 				try {
-		    		mCamera.setParameters(mCamera.getParameters());
+					Parameters cameraParameters = mCamera.getParameters();
+					List<Camera.Size> sizes = cameraParameters.getSupportedPreviewSizes(); 
+					
+		    		mCamera.setParameters(cameraParameters);
 					mCamera.setPreviewDisplay(mPreviewSurfaceView.getHolder());
 					mCamera.setDisplayOrientation(90);
 					mCamera.startPreview();
@@ -187,12 +206,17 @@ public class BluetoothChat extends Activity {
         		mCamera.takePicture(null, null, new Camera.PictureCallback() {
         			@Override
         			public void onPictureTaken(byte[] data, Camera camera) {
-        				// send the image
-        				sendData(data);
-        				
         				// decode the data obtained by the camera into a Bitmap
         				mCameraImage = BitmapFactory.decodeByteArray(data, 0, data.length);
+        				mCameraImage = Bitmap.createScaledBitmap(mCameraImage, IMAGE_WIDTH, IMAGE_HEIGHT, false);
         				
+        				// send the image
+        				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        				mCameraImage.compress(CompressFormat.JPEG, 100, baos);        				
+        				
+        				sendData(baos.toByteArray());
+        				
+        				// restart the preview
 						mCamera.startPreview();     				
         			}
         		});
@@ -245,6 +269,8 @@ public class BluetoothChat extends Activity {
         if (data.length > 0) {
             // Get the message bytes and tell the BluetoothChatService to write
             mChatService.write(data);
+            
+            
         }
     }
 
@@ -280,8 +306,8 @@ public class BluetoothChat extends Activity {
                     break;
                 }
                 break;
-            case MESSAGE_WRITE:
-                // nothing to do for now
+            case MESSAGE_WRITE:           	
+            	
                 break;
             case MESSAGE_READ:
                 byte[] readBuf = (byte[]) msg.obj;
