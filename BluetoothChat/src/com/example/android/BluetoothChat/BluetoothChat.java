@@ -314,10 +314,13 @@ public class BluetoothChat extends Activity {
                 // construct a string from the valid bytes in the buffer
                 Bitmap receivedImage = BitmapFactory.decodeByteArray(readBuf, 0, msg.arg1);
                 
-                SurfaceHolder surfaceHolder = mReceiveSurfaceView.getHolder();
-                Canvas canvas = surfaceHolder.lockCanvas();
-                canvas.drawBitmap(receivedImage, 0.0f, 0.0f, new Paint());
-                surfaceHolder.unlockCanvasAndPost(canvas);
+                if (receivedImage != null)
+                {
+	                SurfaceHolder surfaceHolder = mReceiveSurfaceView.getHolder();
+	                Canvas canvas = surfaceHolder.lockCanvas();
+	                canvas.drawBitmap(receivedImage, 0.0f, 0.0f, new Paint());
+	                surfaceHolder.unlockCanvasAndPost(canvas);
+                }
                 
                 break;
             case MESSAGE_DEVICE_NAME:

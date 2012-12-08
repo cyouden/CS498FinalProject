@@ -423,7 +423,7 @@ public class BluetoothChatService {
     private class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
         private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
+        private OutputStream mmOutStream;
 
         public ConnectedThread(BluetoothSocket socket, String socketType) {
             Log.d(TAG, "create ConnectedThread: " + socketType);
@@ -445,7 +445,7 @@ public class BluetoothChatService {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[4096];
             int bytes;
 
             // Keep listening to the InputStream while connected
@@ -454,9 +454,12 @@ public class BluetoothChatService {
                     // Read from the InputStream
                 	ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 	
-                	while ((bytes = mmInStream.read(buffer)) > 0) {
+                	//read until there is less than a full buffer of data left (or 1007 bytes of data - for some reason after the first image is sent, for every image after the first 1007 bytes are sent on their own)
+                	while ((bytes = mmInStream.read(buffer)) == buffer.length || bytes == 1007) {
                 		baos.write(buffer, 0, bytes);
                 	}
+                	
+                	baos.write(buffer, 0, bytes);
                 	
                 	byte[] data = baos.toByteArray();
                 	
@@ -480,7 +483,8 @@ public class BluetoothChatService {
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
-
+                mmOutStream.flush();
+               
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(BluetoothChat.MESSAGE_WRITE, -1, -1, buffer)
                         .sendToTarget();
