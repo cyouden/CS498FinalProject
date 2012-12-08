@@ -95,8 +95,8 @@ public class BluetoothChat extends Activity {
 	private SurfaceHolder.Callback mSurfaceholderCallBack;
 	private Bitmap mCameraImage;
 	
-	private final int IMAGE_WIDTH = 100;
-	private final int IMAGE_HEIGHT = 100;
+	private final int IMAGE_WIDTH = 300;
+	private final int IMAGE_HEIGHT = 300;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
