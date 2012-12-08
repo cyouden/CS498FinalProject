@@ -33,6 +33,7 @@ import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
@@ -200,32 +201,33 @@ public class BluetoothChat extends Activity {
         mSendButton = (Button) findViewById(R.id.button_send);
         mSendButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {                           	
-                   	
-            	
-            	            	
-        		mCamera.takePicture(null, null, new Camera.PictureCallback() {
-        			@Override
-        			public void onPictureTaken(byte[] data, Camera camera) {
-        				// decode the data obtained by the camera into a Bitmap
-        				mCameraImage = BitmapFactory.decodeByteArray(data, 0, data.length);
-        				mCameraImage = Bitmap.createScaledBitmap(mCameraImage, IMAGE_WIDTH, IMAGE_HEIGHT, false);
-        				
-        				// send the image
-        				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        				mCameraImage.compress(CompressFormat.JPEG, 100, baos);        				
-        				
-        				sendData(baos.toByteArray());
-        				
-        				// restart the preview
-						mCamera.startPreview();     				
-        			}
-        		});
+        		takeAndSendPicture();
             }
         });
 
         // Initialize the BluetoothChatService to perform bluetooth connections
         mChatService = new BluetoothChatService(this, mHandler);        
     }
+
+	private void takeAndSendPicture() {
+		mCamera.takePicture(null, null, new Camera.PictureCallback() {
+			@Override
+			public void onPictureTaken(byte[] data, Camera camera) {
+				// decode the data obtained by the camera into a Bitmap
+				mCameraImage = BitmapFactory.decodeByteArray(data, 0, data.length);
+				mCameraImage = Bitmap.createScaledBitmap(mCameraImage, IMAGE_WIDTH, IMAGE_HEIGHT, false);
+				
+				// send the image
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				mCameraImage.compress(CompressFormat.JPEG, 100, baos);        				
+				
+				sendData(baos.toByteArray());
+				
+				// restart the preview
+				mCamera.startPreview();     				
+			}
+		});
+	}
 
     @Override
     public synchronized void onPause() {
@@ -269,8 +271,6 @@ public class BluetoothChat extends Activity {
         if (data.length > 0) {
             // Get the message bytes and tell the BluetoothChatService to write
             mChatService.write(data);
-            
-            
         }
     }
 
@@ -315,10 +315,14 @@ public class BluetoothChat extends Activity {
                 Bitmap receivedImage = BitmapFactory.decodeByteArray(readBuf, 0, msg.arg1);
                 
                 if (receivedImage != null)
-                {
+                {	
 	                SurfaceHolder surfaceHolder = mReceiveSurfaceView.getHolder();
 	                Canvas canvas = surfaceHolder.lockCanvas();
-	                canvas.drawBitmap(receivedImage, 0.0f, 0.0f, new Paint());
+	                
+	                Matrix matrix = new Matrix();
+	                matrix.setRotate(-90.0f, receivedImage.getWidth() / 2, receivedImage.getHeight() / 2);
+	                canvas.drawBitmap(receivedImage, matrix, new Paint());
+	                
 	                surfaceHolder.unlockCanvasAndPost(canvas);
                 }
                 

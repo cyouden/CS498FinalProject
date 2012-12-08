@@ -473,8 +473,7 @@ public class BluetoothChatService {
                 	byte[] data = baos.toByteArray();
                 	
                     // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(BluetoothChat.MESSAGE_READ, data.length, -1, data)
-                            .sendToTarget();
+                    mHandler.obtainMessage(BluetoothChat.MESSAGE_READ, data.length, -1, data).sendToTarget();
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
@@ -497,8 +496,7 @@ public class BluetoothChatService {
                 mmOutStream.flush();
                
                 // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(BluetoothChat.MESSAGE_WRITE, -1, -1, buffer)
-                        .sendToTarget();
+                mHandler.obtainMessage(BluetoothChat.MESSAGE_WRITE, -1, -1, buffer).sendToTarget();
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
             }
