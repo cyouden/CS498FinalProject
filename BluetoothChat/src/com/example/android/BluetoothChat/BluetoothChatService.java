@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import android.bluetooth.BluetoothAdapter;
@@ -445,25 +446,31 @@ public class BluetoothChatService {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
-            byte[] buffer = new byte[4096];
+            byte[] sizeBuffer = new byte[4];
+            byte[] buffer;// = new byte[4096];
             int bytes;
 
             // Keep listening to the InputStream while connected
             while (true) {
                 try {
                     // Read from the InputStream
+                	
+                	mmInStream.read(sizeBuffer);
+                	
+                	int size = ByteBuffer.wrap(sizeBuffer).getInt();
+                	buffer = new byte[size];		
+                	
                 	ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 	
                 	bytes = mmInStream.read(buffer);
-                	baos.write(buffer, 0, bytes);
                 	
-                	while ((bytes = mmInStream.read(buffer)) == buffer.length) {
-                		baos.write(buffer, 0, bytes);
-                	}
-                	
-                	baos.write(buffer, 0, bytes);
-                	
-                	byte[] data = baos.toByteArray();
+//                	do {
+//                		baos.write(buffer, 0, bytes);
+//                	} while ((bytes = mmInStream.read(buffer)) != 1);
+//                	
+//                	baos.write(buffer, 0, bytes);
+//                	
+                	byte[] data = buffer;
                 	
                     // Send the obtained bytes to the UI Activity
                     mHandler.obtainMessage(BluetoothChat.MESSAGE_READ, data.length, -1, data)
@@ -484,8 +491,12 @@ public class BluetoothChatService {
          */
         public void write(byte[] buffer) {
             try {
+            	mmOutStream.write(ByteBuffer.allocate(4).putInt(buffer.length).array());
+            	
                 mmOutStream.write(buffer);
                 mmOutStream.flush();
+                
+                mmOutStream.write(0);
                
                 // Share the sent message back to the UI Activity
                 mHandler.obtainMessage(BluetoothChat.MESSAGE_WRITE, -1, -1, buffer)
